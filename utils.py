@@ -19,7 +19,7 @@ def normalize_df(data):
         # If the input is a Series, convert it to a DataFrame first, normalize, and convert back to Series
         data = pd.DataFrame(data)
         normalized_data = scaler.fit_transform(data)
-        return pd.Series(normalized_data.flatten(), index=data.index)
+        return pd.Series(normalized_data.flatten(), index=data.index), scaler
     elif isinstance(data, pd.DataFrame):
         # Identify numeric columns in the DataFrame
         numeric_columns = data.select_dtypes(include=['number']).columns
@@ -27,25 +27,28 @@ def normalize_df(data):
         # Fit and transform the numeric columns
         data[numeric_columns] = scaler.fit_transform(data[numeric_columns])
         
-        return data
+        return data, scaler
     else:
         raise ValueError("Input should be a pandas DataFrame or Series.")
 
 def canonicalize_list(smiles_list):
     canonical_smiles_list = []
     mol_list = []
+    dropped_idx = []
 
-    for smiles in smiles_list:
+    for i, smiles in enumerate(smiles_list):
         try:
             mol = Chem.MolFromSmiles(smiles)
             if mol:  # Only process valid molecules
-                canon = Chem.MolToSmiles(mol, isomericSmiles=True)
-                canonical_smiles_list.append(canon)
+                # canon = Chem.MolToSmiles(mol, isomericSmiles=True)
+                # canonical_smiles_list.append(canon)
                 mol_list.append(mol)
+            else:
+                dropped_idx.append(i)
         except Exception:
-            continue  # Skip invalid SMILES without adding None
+            dropped_idx.append(i)  # Skip invalid SMILES without adding None
     
-    return canonical_smiles_list, mol_list
+    return dropped_idx, mol_list
 
 
 
